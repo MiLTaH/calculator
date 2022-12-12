@@ -102,3 +102,53 @@ std::string findNumbers(std::string expression,size_t positionOfOperation,bool i
 	if (isForward == 1) return stringCopy(expression, positionOfOperation + 1, position);
 	else return stringCopy(expression, position, positionOfOperation - 1);
 }
+void binaryOperation(std::string& expression, std::string operationChar, long double (*functionOfOperation) (long double, long double))
+{
+	int position = expression.find(operationChar, 1);
+	int positionOfEnd = position + operationChar.size() - 1;
+	while (position != -1) {
+		long double number1 = toDouble(findNumbers(expression, position, 0));
+		long double number2 = toDouble(findNumbers(expression, positionOfEnd, 1));
+		long double result = functionOfOperation(number1, number2);
+		size_t insertPos = position - findNumbers(expression, position, 0).size();
+		expression.erase(insertPos,
+			operationChar.size() + findNumbers(expression, positionOfEnd, 1).size() + findNumbers(expression, position, 0).size());
+		expression.insert(insertPos, std::to_string(result));
+		position = expression.find(operationChar, 1);
+		positionOfEnd = position + operationChar.size() - 1;
+	}
+}
+void binaryOperationWithPriorities(std::string& expression, std::vector<std::string> operationChars, std::vector<long double (*) (long double, long double)> functions)
+{
+	while (true) {
+		int minPosition, minElement;
+		minPosition = expression.size();
+		minElement = 0;
+		for (size_t i = 0; i < operationChars.size(); i++)
+		{
+			int position = expression.find(operationChars[i], 1);
+			if (position != -1 && position < minPosition) {
+				minPosition = position;
+				minElement = i;
+			}
+		}
+		if (minPosition == expression.size()) break;
+		int position = minPosition;
+		int positionOfEnd = position + operationChars[minElement].size() - 1;
+		long double number1 = toDouble(findNumbers(expression, position, 0));
+		long double number2 = toDouble(findNumbers(expression, positionOfEnd, 1));
+		long double result = functions[minElement](number1, number2);
+		size_t insertPos = position - findNumbers(expression, position, 0).size();
+		expression.erase(insertPos,
+			operationChars[minElement].size() + findNumbers(expression, positionOfEnd, 1).size() + findNumbers(expression, position, 0).size());
+		expression.insert(insertPos, std::to_string(result));
+	}
+}
+void calculate(std::string& expression) {
+	std::vector<std::string> mult = { "*","/","%" };
+	std::vector<long double (*) (long double, long double)> multFunctions = { multiplication,division,divisionWithRemainder };
+	binaryOperationWithPriorities(expression, mult, multFunctions);
+	std::vector <std::string> add = { "+", "-" };
+	std::vector<long double (*) (long double, long double)> addFunctions = { summary,subtract };
+	binaryOperationWithPriorities(expression, add, addFunctions);
+}
